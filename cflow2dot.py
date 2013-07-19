@@ -4,22 +4,24 @@
 import os
 import sys
 
+#TODO make win compatible
+
 global cflow
 global dot
-cflow = '/usr/bin/cflow'
-dot   = '/usr/bin/dot'
+#cflow = '/usr/bin/cflow'
+#dot   = '/usr/bin/dot'
 
-if os.path.isfile(cflow):
-	pass
+cflow = os.popen('which cflow').read()
+if cflow.find('cflow') >= 0:
+    print('cflow found at: ' +cflow)
 else:
-	print('cflow is not installed!')
-	sys.exit(0)
+    raise Exception('cflow not found in $PATH.')
 
-if os.path.isfile(dot):
-	pass
+dot = os.popen('which dot').read()
+if dot.find('dot') >= 0:
+    print('dot found at: ' +dot)
 else:
-	print('dot is not installed!')
-	sys.exit(0)
+    raise Exception('dot not found in $PATH.')
 
 global color
 global shape
