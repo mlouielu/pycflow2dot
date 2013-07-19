@@ -1,37 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-
 #TODO make win compatible
 
-global cflow
-global dot
-#cflow = '/usr/bin/cflow'
-#dot   = '/usr/bin/dot'
-
-cflow = os.popen('which cflow').read()
-if cflow.find('cflow') >= 0:
-    print('cflow found at: ' +cflow)
-else:
-    raise Exception('cflow not found in $PATH.')
-
-dot = os.popen('which dot').read()
-if dot.find('dot') >= 0:
-    print('dot found at: ' +dot)
-else:
-    raise Exception('dot not found in $PATH.')
-
-global color
-global shape
-color = ['#eecc80', '#ccee80', '#80ccee', '#eecc80', '#80eecc']
-shape = ['box', 'ellipse', 'octagon', 'hexagon', 'diamond']
-
-
-global version
-version = '20130523'
-
+import os
+import sys
 
 def get_max_space(lines):
     space = 0
@@ -40,7 +13,6 @@ def get_max_space(lines):
             i = 0
             space += 1
     return space
-
 
 def get_name(line):
     name = ''
@@ -53,10 +25,10 @@ def get_name(line):
             name += line[i]
     return name
 
-
 def parse(data, offset = 0, filename = ''):
-    global color
-    global shape
+    color = ['#eecc80', '#ccee80', '#80ccee', '#eecc80', '#80eecc']
+    shape = ['box', 'ellipse', 'octagon', 'hexagon', 'diamond']
+    
     dot = ''
     dot += 'digraph G {\n'
     dot += 'node [peripheries=2 style="filled,rounded" fontname="Vera Sans Mono" color="#eecc80"];\n'
@@ -103,12 +75,21 @@ def get_output_file():
         output_file = os.path.join(os.getcwd(), 'a.svg')
     return output_file
     
-
-
-
 def main():
-    global dot
-    global cflow    
+    version = '20130523'
+    
+    cflow = os.popen('which cflow').read()
+    if cflow.find('cflow') >= 0:
+        print('cflow found at: ' +cflow)
+    else:
+        raise Exception('cflow not found in $PATH.')
+    
+    dot = os.popen('which dot').read()
+    if dot.find('dot') >= 0:
+        print('dot found at: ' +dot)
+    else:
+        raise Exception('dot not found in $PATH.')
+    
     input_filename = ''
     if len(sys.argv) == 2:
         input_filename = sys.argv[1]
@@ -127,7 +108,6 @@ def main():
             fp.write(svg_data)
     except Exception as e:
         print(e)
-
 
 if __name__ == "__main__":
     main()
