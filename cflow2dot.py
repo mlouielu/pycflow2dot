@@ -23,18 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # note:
 #   python3 macports path
 
-#TODO import transys and export TS
-#TODO deal with multiple src fnames in one svg
-
-#TODO link for latex, just put the hyperref code, no need for cross-file hurdle,
-#     they can be produced separately and merged when latex gets compiled
-#TODO produce latex automatically, by creating sources and calling xelatex
+#TODO for each node, load all nesting levels, and find min distance to root
+#TODO offer pydot export
 
 #TODO list to exclude symbols
 #TODO detect symbols defined in: local, global includes
+#TODO import transys and export TS
 
-import os
-import sys
 import argparse
 import subprocess
 import locale
@@ -71,11 +66,16 @@ def get_name(line):
             name += line[i]
     return name
 
-def call_cflow(c_fname, cflow, numbered_nesting=True):
+def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
+    cflow_cmd = [cflow]
+    
     if numbered_nesting:
-        cflow_cmd = [cflow, '-l', c_fname]
-    else:
-        cflow_cmd = [cflow, c_fname]
+        cflow_cmd += ['-l']
+    
+    if preprocess:
+        cflow_cmd += ['--cpp']
+    
+    cflow_cmd += [c_fname]
     
     dprint('cflow command:\n\t' +str(cflow_cmd) )
     
@@ -137,34 +137,10 @@ def cflow2dot_old(data, offset=False, filename = ''):
     #dprint('dot dump str:\n\n' +dot)
     return dot
 
-def dot_format_node(cur_node, cur_label, cur_color, cur_shape):
-    dot_str = cur_node +'[label="' +cur_label +'" ' \
-            +'color="' +cur_color +'" shape=' +cur_shape +'];\n'
-    return dot_str
-
-def cflow2dot_nx(cflow_str, c_fname, for_latex=False, multi_page=False):
-    # load C source for extra checks
-    #if multi_page:
-    #    f = open(c_fname, 'r')
-    #    src = f.read()
-    #    f.close()
-    
-    if for_latex:
-        c_fname = re.sub(r'_', r'\\\\_', c_fname)
-    
-    colors = ['#eecc80', '#ccee80', '#80ccee', '#eecc80', '#80eecc']
-    shapes = ['box', 'ellipse', 'octagon', 'hexagon', 'diamond']
-    
-    dot_str = 'digraph G {\n'
-    dot_str += 'node [peripheries=2 style="filled,rounded" '+ \
-           'fontname="Vera Sans Mono" color="#eecc80"];\n'
-    dot_str += 'rankdir=LR;\n'
-    dot_str += 'label="' +c_fname +'"\n'
-    dot_str += 'main [shape=box];\n'
-    
+def cflow2nx(cflow_str, c_fname):
     lines = cflow_str.replace('\r', '').split('\n')
     
-    ts = nx.DiGraph()
+    g = nx.DiGraph()
     stack = dict()
     for line in lines:
         dprint(line)
@@ -179,10 +155,8 @@ def cflow2dot_nx(cflow_str, c_fname, for_latex=False, multi_page=False):
         # get source line #
         src_line_no = re.findall(':.*>', line)
         if src_line_no != []:
-            def_in_cfname = True
             src_line_no = int(src_line_no[0][1:-1] )
         else:
-            def_in_cfname = False
             src_line_no = -1
         
         # trim
@@ -191,6 +165,7 @@ def cflow2dot_nx(cflow_str, c_fname, for_latex=False, multi_page=False):
         s = re.sub(r'\}\s*', r'\t', s)
         
         # where are we ?
+        print(s)
         (nest_level, func_name) = re.split(r'\t', s)
         nest_level = int(nest_level)
         cur_node = func_name
@@ -202,91 +177,177 @@ def cflow2dot_nx(cflow_str, c_fname, for_latex=False, multi_page=False):
         stack[nest_level] = cur_node
         
         # not already seen ?
-        if cur_node not in ts:
-            ts.add_node(cur_node, scr_line=src_line_no)
+        if cur_node not in g:
+            g.add_node(cur_node, nest_level=nest_level, src_line=src_line_no)
             dprint('New Node: ' +cur_node)
         
-        # root node ?
-        if nest_level == 0:
-            # dump node, no pred->curnode edge
-            cur_color = colors[0]
-            cur_shape = 'box'
-        
-            # node
-            dot_str += dot_format_node(cur_node, cur_label, cur_color, cur_shape)
-        else:
-            # > 0 depth
+        # not root node ?
+        if nest_level != 0:
+            # then has predecessor
             pred_node = stack[nest_level -1]
             
             # new edge ?
-            if ts.has_edge(pred_node, cur_node):
+            if g.has_edge(pred_node, cur_node):
                 # avoid duplicate edges
                 # note DiGraph is so def
+            
+                # buggy: coloring depends on first occurrence ! (subjective)
                 continue
-            else:
-                ts.add_edge(pred_node, cur_node)
-                dprint('Found edge:\n\t' +pred_node +'--->' +cur_node)
             
-            cur_color = colors[(nest_level -1) % 5]
-            cur_shape = shapes[nest_level % 5]
-            
-            # node
-            dot_str += dot_format_node(cur_node, cur_label, cur_color, cur_shape)
-            
-            # edge
-            dot_str += 'edge [color="' +cur_color +'"];\n'
-            dot_str += pred_node +'->' +cur_node +'\n'
-        
-    dot_str += '}\n'
+            # add new edge
+            g.add_edge(pred_node, cur_node)
+            dprint('Found edge:\n\t' +pred_node +'--->' +cur_node)
     
-    dprint('dot dump str:\n\n' +dot_str)
-    return (dot_str, ts)
+    return g
 
-def label_graphs():
+def dot_preamble(c_fname, for_latex):
+    if for_latex:
+        c_fname = re.sub(r'_', r'\\\\_', c_fname)
     
-    for graph in call_graphs:
-        other_graphs = call_graphs.remove(graph)
+    dot_str = 'digraph G {\n'
+    dot_str += 'node [peripheries=2 style="filled,rounded" '+ \
+           'fontname="Vera Sans Mono" color="#eecc80"];\n'
+    dot_str += 'rankdir=LR;\n'
+    dot_str += 'label="' +c_fname +'"\n'
+    dot_str += 'main [shape=box];\n'
+    
+    return dot_str
 
-def label_single_graph():
-    """Annotate edges of single src file call graph."""
+def choose_node_format(node, nest_level, src_line, defined_somewhere,
+                       for_latex, multi_page):
+    colors = ['#eecc80', '#ccee80', '#80ccee', '#eecc80', '#80eecc']
+    shapes = ['box', 'ellipse', 'octagon', 'hexagon', 'diamond']
+    sl = '\\\\' # after fprintf \\ and after dot \, a single slash !
     
-    
-    
-def label_node():
-    sl = '\\\\'
+    # color, shape ?
+    if nest_level == 0:
+        color = colors[0]
+        shape = 'box'
+    else:
+        color = colors[(nest_level -1) % 5]
+        shape = shapes[nest_level % 5]
     
     # fix underscores ?
     if for_latex:
-        cur_label = re.sub(r'_', r'\\\\_', cur_node)
+        label = re.sub(r'_', r'\\\\_', node)
     else:
-        cur_label = cur_node
-    dprint('Label:\n\t: ' +cur_label)
+        label = node
+    dprint('Label:\n\t: ' +label)
     
     # src line of def here ?
-    if def_in_cfname:
+    if src_line != -1:
         if for_latex:
-            cur_label = cur_label +2*sl +str(src_line_no)
+            label = label +'\n' +str(src_line)
         else:
-            cur_label = cur_label +'\n' +str(src_line_no)
+            label = label +'\n' +str(src_line)
     
     # multi-page pdf ?
-    if for_multi_src:
-        if def_in_cfname:
+    if multi_page:
+        if src_line != -1:
             # label
-            cur_label = sl +'descitem{' +cur_node +'}' +cur_label
+            label = sl +'descitem{' +node +'}\n' +label
         else:
-            # link
-            cur_label = sl +'descref[' +cur_label +']{' +cur_node +'}'
+            # link only if LaTeX label will appear somewhere
+            if defined_somewhere:
+                label = sl +'descref[' +label +']{' +node +'}'
         
-        dprint('Node text:\n\t: ' +cur_label)
+    dprint('Node dot label:\n\t: ' +label)
+    
+    return (label, color, shape)
 
-def get_output_file(in_fname):
-    argv = sys.argv
-    if argv[len(argv) - 2] == '-o' or argv[len(argv) - 2] == '--output':
-        output_file = os.path.join(os.getcwd(), argv[len(argv) - 1])
+def dot_format_node(node, nest_level, src_line, defined_somewhere,
+                    for_latex, multi_page):
+    (label, color, shape) = choose_node_format(node, nest_level, src_line,
+                                               defined_somewhere,
+                                               for_latex, multi_page)
+    dot_str = node
+    dot_str += '[label="' +label +'" '
+    dot_str += 'color="' +color +'" '
+    dot_str += 'shape=' +shape +'];\n'
+    
+    return dot_str
+
+def dot_format_edge(from_node, to_node, color):
+    dot_str = 'edge [color="' +color +'"];\n'
+    dot_str += from_node +'->' +to_node +'\n'
+    
+    return dot_str
+
+def node_defined_in_other_src(node, other_graphs):
+    defined_somewhere = False
+    print(other_graphs)
+    for graph in other_graphs:
+        if node in graph:
+            src_line = graph.node[node]['src_line']
+            
+            if src_line != -1:
+                defined_somewhere = True
+    
+    return defined_somewhere
+
+def dump_dot_wo_pydot(graph, other_graphs, c_fname, for_latex, multi_page):
+    dot_str = dot_preamble(c_fname, for_latex)
+    
+    for node in graph:
+        node_dict = graph.node[node]
+        print(node_dict)
+        defined_somewhere = node_defined_in_other_src(node, other_graphs)
+        
+        nest_level = node_dict['nest_level']
+        src_line = node_dict['src_line']
+        
+        dot_str += dot_format_node(node, nest_level, src_line, defined_somewhere,
+                                   for_latex, multi_page)
+    
+    for from_node, to_node in graph.edges_iter():
+        # call order affects edge color, so use only black
+        color = '#000000'
+        dot_str += dot_format_edge(from_node, to_node, color)
+    
+    dot_str += '}\n'
+    dprint('dot dump str:\n\n' +dot_str)
+    
+    return dot_str
+
+def write_dot_file(dot_str, dot_fname):
+    try:
+        dot_path = dot_fname +'.dot'
+        with open(dot_path, 'w') as fp:
+            fp.write(dot_str)
+            print('Dumped dot file.')
+    except:
+        raise Exception('Failed to save dot.')
+    
+    return dot_path
+
+def write_graph2dot(graph, other_graphs, c_fname, img_fname, for_latex, multi_page):
+    pydot_available = False
+    
+    if pydot_available:
+        # dump using networkx and pydot
+        raise NotImplementedError
     else:
-        output_file = os.path.join(os.getcwd(), in_fname)
-    return output_file
+        print('Pydot not found. Exporting using pycflow2dot.write_dot_file().')
+        dot_str = dump_dot_wo_pydot(graph, other_graphs, c_fname,
+                                    for_latex=for_latex, multi_page=multi_page)
+        dot_path = write_dot_file(dot_str, img_fname)
+    
+    return dot_path
+
+def write_graphs2dot(graphs, c_fname, img_fname, for_latex, multi_page):
+    dot_paths = []
+    counter = 0
+    for graph in graphs:
+        print(graphs)
+        other_graphs = list(graphs)
+        other_graphs.remove(graph)
+        
+        cur_img_fname = img_fname +str(counter)
+        dot_paths += [write_graph2dot(graph, other_graphs, c_fname, cur_img_fname,
+                                     for_latex, multi_page) ]
+        counter += 1
+    
+    return dot_paths
 
 def check_cflow_dot_availability():
     required = ['cflow', 'dot']
@@ -305,29 +366,19 @@ def check_cflow_dot_availability():
     
     return dep_paths
 
-def write_dot_file(dotdata, c_fname):
-    dot_fname = get_output_file(c_fname)
-    try:
-        dot_path = os.path.join(dot_fname, dot_fname +'.dot')
-        with open(dot_path, 'w') as fp:
-            fp.write(dotdata)
-            print('Dumped dot file.')
-    except:
-        raise Exception('Failed to save dot.')
-    
-    return dot_path
-
-def dot2svg(c_fname, dot_path, img_format):
-    img_fname = c_fname +'.' +img_format
-    
-    dot_cmd = ['dot', '-T'+img_format, '-o', img_fname, dot_path]
-    dprint(dot_cmd)
-    
+def dot2svg(dot_paths, img_format):
     print('This may take some time... ...')
-    subprocess.check_call(dot_cmd)
-    print('Dot produced ' +img_format +' successfully.')
+    for dot_path in dot_paths:
+        img_fname = str(dot_path)
+        img_fname = img_fname.replace('.dot', '.' +img_format)
+    
+        dot_cmd = ['dot', '-T'+img_format, '-o', img_fname, dot_path]
+        dprint(dot_cmd)
+        
+        subprocess.check_call(dot_cmd)
+    print(img_format +' produced successfully from dot.')
 
-def dump_latex_preamble():
+def latex_preamble_str():
     """Return string for LaTeX preamble.
     
     Used if you want to compile the SVGs stand-alone.
@@ -358,6 +409,9 @@ def dump_latex_preamble():
     """
     return latex
 
+def write_latex():
+    latex_str = latex_preamble_str()
+
 def usage():
     doc = 'cflow2dot.py file1 file2 ..... --output[-o] outputfilename\n'
     doc += 'output file format is svg\n'
@@ -382,13 +436,25 @@ def parse_args():
                               +'and their definitions. Used for multi-page '
                               +'PDF output, where each page is a different '
                               +'source file.')
+    parser.add_argument('-p', '--preprocess', default=False, action='store_true',
+                        help='pass --cpp option to cflow, '
+                        +'invoking C preprocessing.')
     args = parser.parse_args()
     
     return args
 
 def main():
-    """Rnn cflow, parse output, produce dot and compile it into pdf | svg."""
+    """Run cflow, parse output, produce dot and compile it into pdf | svg."""
     
+    copyright_msg = """
+    PyCflow2dot v0.1 - Copyright 2013 Ioannis Filippidis
+                       Copyright 2013 Dabaichi Valbendan
+                       Copyright 2010 developer of cflow2dot
+    licensed under GNU GPL v3.
+    """
+    print(copyright_msg)
+    
+    # input
     (cflow, dot) = check_cflow_dot_availability()
     
     args = parse_args()
@@ -398,6 +464,7 @@ def main():
     for_latex = args.latex_svg
     multi_page = args.multi_page
     img_fname = args.output_filename
+    preproc = args.preprocess
     
     dprint('C src files:\n\t' +str(c_fnames) +", (extension '.c' omitted)\n"
            +'img fname:\n\t' +str(img_fname) +'.' +img_format +'\n'
@@ -406,14 +473,17 @@ def main():
     
     cflow_strs = []
     for c_fname in c_fnames:
-        cflow_strs += call_cflow(c_fname, cflow, numbered_nesting=True)
+        cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
+                                 preprocess=preproc)
+        cflow_strs += [cur_str]
     
-    return
-    (dotdata, ts) = cflow2dot_nx(cflow_str, c_fnames,
-                                 for_latex=for_latex, multi_page=multi_page)
+    graphs = []
+    for cflow_out, c_fname in zip(cflow_strs, c_fnames):
+        cur_graph = cflow2nx(cflow_out, c_fname)
+        graphs += [cur_graph]
     
-    dot_path = write_dot_file(dotdata, img_fname)
-    dot2svg(img_fname, dot_path, img_format)
+    dot_paths = write_graphs2dot( graphs, c_fname, img_fname, for_latex, multi_page)
+    dot2svg(dot_paths, img_format)
 
 if __name__ == "__main__":
     main()
