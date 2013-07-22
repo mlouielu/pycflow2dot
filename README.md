@@ -1,15 +1,14 @@
 pycflow2dot
 ===========
 
-Tested on Python 3.3.
+Description
+-----------
+PyCflow2dot is a Python port of the Perl script cflow2dot.
+Tested with Python 3.2 (NetworkX not yet available in 3.3.).
 
-This software is under GPL v3 licenses!
-This software is a porting for cflow2dot whitch is written in perl language.
+Uses cflow and dot to draw a call graph.
+Available output formats: .DOT, .SVG, .PDF, .PNG.
 
-Use cflow and dot to draw call graph.
-output format is .svg
-
-Thank you for Ioannis Filippidis's advice.
-
-Hope my grammar is right.
-Sorry for my poor English.
+License
+-------
+PuCflow2dot is licensed under the GNU GPL v3.
