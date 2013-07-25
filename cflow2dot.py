@@ -35,13 +35,17 @@ import subprocess
 import locale
 import re
 import networkx as nx # make this an optional dependency
-# pydot will also be an optional depepndency
+try:
+    import pydot
+except:
+    pydot = None
 
-def dprint(s):
+debug_msg_verbosity = 0
+def dprint(verbosity, s):
     """Debug mode printing."""
-    # debug print
     #TODO make this a package
-    print(s)
+    if verbosity < debug_msg_verbosity:
+        print(s)
 
 def bytes2str(b):
     encoding = locale.getdefaultlocale()[1]
@@ -72,16 +76,19 @@ def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
     if numbered_nesting:
         cflow_cmd += ['-l']
     
-    if preprocess:
+    # None when -p passed w/o value
+    if preprocess == None:
         cflow_cmd += ['--cpp']
+    elif preprocess != False:
+        cflow_cmd += ['--cpp=' +preprocess]
     
     cflow_cmd += [c_fname]
     
-    dprint('cflow command:\n\t' +str(cflow_cmd) )
+    dprint(2, 'cflow command:\n\t' +str(cflow_cmd) )
     
     cflow_data = subprocess.check_output(cflow_cmd)
     cflow_data = bytes2str(cflow_data)
-    dprint('cflow returned:\n\n' +cflow_data)
+    dprint(2, 'cflow returned:\n\n' +cflow_data)
     
     return cflow_data
 
@@ -134,7 +141,7 @@ def cflow2dot_old(data, offset=False, filename = ''):
                 raise Exception('bug ?')
     dot += '}\n'
     
-    #dprint('dot dump str:\n\n' +dot)
+    dprint(2, 'dot dump str:\n\n' +dot)
     return dot
 
 def cflow2nx(cflow_str, c_fname):
@@ -143,7 +150,7 @@ def cflow2nx(cflow_str, c_fname):
     g = nx.DiGraph()
     stack = dict()
     for line in lines:
-        dprint(line)
+        #dprint(2, line)
         
         # empty line ?
         if line == '':
@@ -165,12 +172,11 @@ def cflow2nx(cflow_str, c_fname):
         s = re.sub(r'\}\s*', r'\t', s)
         
         # where are we ?
-        print(s)
         (nest_level, func_name) = re.split(r'\t', s)
         nest_level = int(nest_level)
-        cur_node = func_name
+        cur_node = is_reserved_by_dot(func_name)
         
-        dprint('Found function:\n\t' +func_name
+        dprint(1, 'Found function:\n\t' +func_name
               +',\n at depth:\n\t' +str(nest_level)
               +',\n at src line:\n\t' +str(src_line_no) )
         
@@ -179,7 +185,7 @@ def cflow2nx(cflow_str, c_fname):
         # not already seen ?
         if cur_node not in g:
             g.add_node(cur_node, nest_level=nest_level, src_line=src_line_no)
-            dprint('New Node: ' +cur_node)
+            dprint(0, 'New Node: ' +cur_node)
         
         # not root node ?
         if nest_level != 0:
@@ -196,9 +202,18 @@ def cflow2nx(cflow_str, c_fname):
             
             # add new edge
             g.add_edge(pred_node, cur_node)
-            dprint('Found edge:\n\t' +pred_node +'--->' +cur_node)
+            dprint(0, 'Found edge:\n\t' +pred_node +'--->' +cur_node)
     
     return g
+
+def is_reserved_by_dot(word):
+    reserved = {'graph', 'strict', 'digraph', 'subgraph', 'node', 'edge'}
+    
+    # dot is case-insensitive, according to:
+    #   http://www.graphviz.org/doc/info/lang.html
+    if word.lower() in reserved:
+        word = word +'_'
+    return word
 
 def dot_preamble(c_fname, for_latex):
     if for_latex:
@@ -232,26 +247,26 @@ def choose_node_format(node, nest_level, src_line, defined_somewhere,
         label = re.sub(r'_', r'\\\\_', node)
     else:
         label = node
-    dprint('Label:\n\t: ' +label)
+    dprint(1, 'Label:\n\t: ' +label)
     
     # src line of def here ?
     if src_line != -1:
         if for_latex:
-            label = label +'\n' +str(src_line)
+            label = label +'\\n' +str(src_line)
         else:
-            label = label +'\n' +str(src_line)
+            label = label +'\\n' +str(src_line)
     
     # multi-page pdf ?
     if multi_page:
         if src_line != -1:
             # label
-            label = sl +'descitem{' +node +'}\n' +label
+            label = sl +'descitem{' +node +'}\\n' +label
         else:
             # link only if LaTeX label will appear somewhere
             if defined_somewhere:
                 label = sl +'descref[' +label +']{' +node +'}'
         
-    dprint('Node dot label:\n\t: ' +label)
+    dprint(1, 'Node dot label:\n\t: ' +label)
     
     return (label, color, shape)
 
@@ -263,19 +278,19 @@ def dot_format_node(node, nest_level, src_line, defined_somewhere,
     dot_str = node
     dot_str += '[label="' +label +'" '
     dot_str += 'color="' +color +'" '
-    dot_str += 'shape=' +shape +'];\n'
+    dot_str += 'shape=' +shape +'];\n\n'
     
     return dot_str
 
 def dot_format_edge(from_node, to_node, color):
-    dot_str = 'edge [color="' +color +'"];\n'
+    dot_str = 'edge [color="' +color +'"];\n\n'
     dot_str += from_node +'->' +to_node +'\n'
     
     return dot_str
 
 def node_defined_in_other_src(node, other_graphs):
     defined_somewhere = False
-    print(other_graphs)
+    
     for graph in other_graphs:
         if node in graph:
             src_line = graph.node[node]['src_line']
@@ -290,7 +305,7 @@ def dump_dot_wo_pydot(graph, other_graphs, c_fname, for_latex, multi_page):
     
     for node in graph:
         node_dict = graph.node[node]
-        print(node_dict)
+        
         defined_somewhere = node_defined_in_other_src(node, other_graphs)
         
         nest_level = node_dict['nest_level']
@@ -305,7 +320,7 @@ def dump_dot_wo_pydot(graph, other_graphs, c_fname, for_latex, multi_page):
         dot_str += dot_format_edge(from_node, to_node, color)
     
     dot_str += '}\n'
-    dprint('dot dump str:\n\n' +dot_str)
+    dprint(2, 'dot dump str:\n\n' +dot_str)
     
     return dot_str
 
@@ -314,31 +329,28 @@ def write_dot_file(dot_str, dot_fname):
         dot_path = dot_fname +'.dot'
         with open(dot_path, 'w') as fp:
             fp.write(dot_str)
-            print('Dumped dot file.')
+            dprint(0, 'Dumped dot file.')
     except:
         raise Exception('Failed to save dot.')
     
     return dot_path
 
-def write_graph2dot(graph, other_graphs, c_fname, img_fname, for_latex, multi_page):
-    pydot_available = False
-    
-    if pydot_available:
-        # dump using networkx and pydot
-        raise NotImplementedError
-    else:
+def write_graph2dot(graph, other_graphs, c_fname, img_fname, for_latex, multi_page):    
+    if pydot is None:
         print('Pydot not found. Exporting using pycflow2dot.write_dot_file().')
         dot_str = dump_dot_wo_pydot(graph, other_graphs, c_fname,
                                     for_latex=for_latex, multi_page=multi_page)
         dot_path = write_dot_file(dot_str, img_fname)
+    else:
+        # dump using networkx and pydot
+        raise NotImplementedError
     
     return dot_path
 
-def write_graphs2dot(graphs, c_fname, img_fname, for_latex, multi_page):
+def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page):
     dot_paths = []
     counter = 0
-    for graph in graphs:
-        print(graphs)
+    for graph, c_fname in zip(graphs, c_fnames):
         other_graphs = list(graphs)
         other_graphs.remove(graph)
         
@@ -373,7 +385,7 @@ def dot2svg(dot_paths, img_format):
         img_fname = img_fname.replace('.dot', '.' +img_format)
     
         dot_cmd = ['dot', '-T'+img_format, '-o', img_fname, dot_path]
-        dprint(dot_cmd)
+        dprint(1, dot_cmd)
         
         subprocess.check_call(dot_cmd)
     print(img_format +' produced successfully from dot.')
@@ -422,7 +434,7 @@ def usage():
 def parse_args():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument('input_filenames', nargs='+',
+    parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='Filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
                         help='name of dot, svg, pdf etc file produced')
@@ -436,9 +448,9 @@ def parse_args():
                               +'and their definitions. Used for multi-page '
                               +'PDF output, where each page is a different '
                               +'source file.')
-    parser.add_argument('-p', '--preprocess', default=False, action='store_true',
+    parser.add_argument('-p', '--preprocess', default=False, nargs='?',
                         help='pass --cpp option to cflow, '
-                        +'invoking C preprocessing.')
+                        +'invoking C preprocessor, optionally with args.')
     args = parser.parse_args()
     
     return args
@@ -466,7 +478,7 @@ def main():
     img_fname = args.output_filename
     preproc = args.preprocess
     
-    dprint('C src files:\n\t' +str(c_fnames) +", (extension '.c' omitted)\n"
+    dprint(0, 'C src files:\n\t' +str(c_fnames) +", (extension '.c' omitted)\n"
            +'img fname:\n\t' +str(img_fname) +'.' +img_format +'\n'
            +'LaTeX export from Inkscape:\n\t' +str(for_latex) +'\n'
            +'Multi-page PDF:\n\t' +str(multi_page) )
@@ -482,7 +494,7 @@ def main():
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
     
-    dot_paths = write_graphs2dot( graphs, c_fname, img_fname, for_latex, multi_page)
+    dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page)
     dot2svg(dot_paths, img_format)
 
 if __name__ == "__main__":
