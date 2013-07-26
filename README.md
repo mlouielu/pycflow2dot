@@ -3,18 +3,13 @@ pycflow2dot
 
 Description
 -----------
-Draw the call graph of C source code using cflow_ and dot_.
+Draw the call graph of C source code using [cflow](http://en.wikipedia.org/wiki/GNU_cflow) and [dot](http://www.graphviz.org/).
 Output to LaTeX, .dot, .PDF, .SVG, .PNG
 and from dot to all formats supported from it.
-The LaTeX output is obtained by including the SVG via Inkscape_'s LaTeX export_ functionality.
-
-.. _cflow: http://en.wikipedia.org/wiki/GNU_cflow
-.. _dot: http://www.graphviz.org/
-.. _Inkscape: http://inkscape.org/
-.. _export: http://mirror.math.ku.edu/tex-archive/info/svg-inkscape/InkscapePDFLaTeX.pdf
+The LaTeX output is obtained by including the SVG via [Inkscape](http://inkscape.org/)'s LaTeX [export(http://mirror.math.ku.edu/tex-archive/info/svg-inkscape/InkscapePDFLaTeX.pdf) functionality.
 
 Multi-file sources are converted to multiple SVG files, one for each source.
-These contain links using the LaTeX package hyperref_, so that after compilation
+These contain links using the LaTeX package [hyperref](http://ctan.org/pkg/hyperref), so that after compilation
 one can click on the name of a function call and be taken to its definition,
 even if that definition is in another page of the PDF, because the function is defined in
 another source file than the one corresponding to the current PDF page.
@@ -28,8 +23,6 @@ subset of the sources.
 For now the LaTeX result has to be manually compiled, though this
 extra step will be automated in the future. Multi-SVG export will still be
 available, so that the results can be included in a larger document, e.g., a report.
-
-.. _hyperref: http://ctan.org/pkg/hyperref
 
 PyCflow2dot is a Python port of the Perl script cflow2dot.
 Tested with Python 3.2 (NetworkX not yet available in 3.3.).
