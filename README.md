@@ -6,7 +6,7 @@ Description
 Draw the call graph of C source code using [cflow](http://en.wikipedia.org/wiki/GNU_cflow) and [dot](http://www.graphviz.org/).
 Output to LaTeX, .dot, .PDF, .SVG, .PNG
 and from dot to all formats supported from it.
-The LaTeX output is obtained by including the SVG via [Inkscape](http://inkscape.org/)'s LaTeX [export(http://mirror.math.ku.edu/tex-archive/info/svg-inkscape/InkscapePDFLaTeX.pdf) functionality.
+The LaTeX output is obtained by including the SVG via [Inkscape](http://inkscape.org/)'s LaTeX [export](http://mirror.math.ku.edu/tex-archive/info/svg-inkscape/InkscapePDFLaTeX.pdf) functionality.
 
 Multi-file sources are converted to multiple SVG files, one for each source.
 These contain links using the LaTeX package [hyperref](http://ctan.org/pkg/hyperref), so that after compilation
