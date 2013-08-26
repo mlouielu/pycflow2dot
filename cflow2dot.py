@@ -23,12 +23,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # note:
 #   python3 macports path
 
+#TODO option for common file, instead of multiple (suitable for small programs)
+# note that this is not very convenient in general,
+# the perfect solution would be to separate into individual src files later,
+# but this requires the separation of the call graph, which is quite difficult.
+# Can it be achieved with networkx and multiple graphs ?
+
+
 #TODO for each node, load all nesting levels, and find min distance to root
+#TODO clean dot after exporting to pdf, even better: just get string dot returns
+
 #TODO offer pydot export
 
 #TODO list to exclude symbols
 #TODO detect symbols defined in: local, global includes
 #TODO import transys and export TS
+
+#TODO find and highlight shortest path between selected functions
+#TODO diff call graphs
+#TODO provide interface for when imported
 
 import argparse
 import subprocess
