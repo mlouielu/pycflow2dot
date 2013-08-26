@@ -1,4 +1,3 @@
-#!/opt/local/bin/python3
 # -*- coding: utf-8 -*-
 
 """
@@ -43,6 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #TODO diff call graphs
 #TODO provide interface for when imported
 
+import sys
 import argparse
 import subprocess
 import locale
@@ -464,6 +464,9 @@ def parse_args():
     parser.add_argument('-p', '--preprocess', default=False, nargs='?',
                         help='pass --cpp option to cflow, '
                         +'invoking C preprocessor, optionally with args.')
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(1)
     args = parser.parse_args()
     
     return args
@@ -472,10 +475,7 @@ def main():
     """Run cflow, parse output, produce dot and compile it into pdf | svg."""
     
     copyright_msg = """
-    PyCflow2dot v0.1 - Copyright 2013 Ioannis Filippidis
-                       Copyright 2013 Dabaichi Valbendan
-                       Copyright 2010 developer of cflow2dot
-    licensed under GNU GPL v3.
+    PyCflow2dot v0.1 - licensed under GNU GPL v3
     """
     print(copyright_msg)
     
