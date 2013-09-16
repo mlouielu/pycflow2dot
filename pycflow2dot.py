@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2010 developer of https://code.google.com/p/cflow2dot/ (name yet unknown)
+Copyright 2010 developer (unknown): https://code.google.com/p/cflow2dot/
 Copyright 2013 Dabaichi Valbendan
 Copyright 2013 Ioannis Filippidis
 
@@ -18,30 +18,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
-# note:
-#   python3 macports path
-
-#TODO option for common file, instead of multiple (suitable for small programs)
-# note that this is not very convenient in general,
-# the perfect solution would be to separate into individual src files later,
-# but this requires the separation of the call graph, which is quite difficult.
-# Can it be achieved with networkx and multiple graphs ?
-
-
-#TODO for each node, load all nesting levels, and find min distance to root
-#TODO clean dot after exporting to pdf, even better: just get string dot returns
-
-#TODO offer pydot export
-
-#TODO list to exclude symbols
-#TODO detect symbols defined in: local, global includes
-#TODO import transys and export TS
-
-#TODO find and highlight shortest path between selected functions
-#TODO diff call graphs
-#TODO provide interface for when imported
-
 import sys
 import argparse
 import subprocess
@@ -348,7 +324,8 @@ def write_dot_file(dot_str, dot_fname):
     
     return dot_path
 
-def write_graph2dot(graph, other_graphs, c_fname, img_fname, for_latex, multi_page):    
+def write_graph2dot(graph, other_graphs, c_fname, img_fname,
+                    for_latex, multi_page, layout):
     if pydot is None:
         print('Pydot not found. Exporting using pycflow2dot.write_dot_file().')
         dot_str = dump_dot_wo_pydot(graph, other_graphs, c_fname,
@@ -356,11 +333,22 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname, for_latex, multi_pa
         dot_path = write_dot_file(dot_str, img_fname)
     else:
         # dump using networkx and pydot
-        raise NotImplementedError
+        pydot_graph = nx.to_pydot(graph)
+        
+        pydot_graph.set_splines('true')
+        if layout == 'twopi':
+            pydot_graph.set_ranksep(5)
+            pydot_graph.set_root('main')
+        else:
+            pydot_graph.set_overlap(False)
+            pydot_graph.set_rankdir('LR')
+        
+        dot_path = img_fname +'.dot'
+        pydot_graph.write(dot_path, format='dot')
     
     return dot_path
 
-def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page):
+def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page, layout):
     dot_paths = []
     counter = 0
     for graph, c_fname in zip(graphs, c_fnames):
@@ -369,7 +357,7 @@ def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page):
         
         cur_img_fname = img_fname +str(counter)
         dot_paths += [write_graph2dot(graph, other_graphs, c_fname, cur_img_fname,
-                                     for_latex, multi_page) ]
+                                     for_latex, multi_page, layout) ]
         counter += 1
     
     return dot_paths
@@ -391,13 +379,13 @@ def check_cflow_dot_availability():
     
     return dep_paths
 
-def dot2svg(dot_paths, img_format):
+def dot2img(dot_paths, img_format, layout):
     print('This may take some time... ...')
     for dot_path in dot_paths:
         img_fname = str(dot_path)
         img_fname = img_fname.replace('.dot', '.' +img_format)
     
-        dot_cmd = ['dot', '-T'+img_format, '-o', img_fname, dot_path]
+        dot_cmd = [layout, '-T'+img_format, '-o', img_fname, dot_path]
         dprint(1, dot_cmd)
         
         subprocess.check_call(dot_cmd)
@@ -464,6 +452,11 @@ def parse_args():
     parser.add_argument('-p', '--preprocess', default=False, nargs='?',
                         help='pass --cpp option to cflow, '
                         +'invoking C preprocessor, optionally with args.')
+    parser.add_argument(
+        '-g', '--layout', default='dot',
+        choices=['dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp'],
+        help='graphviz layout algorithm.'
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
@@ -490,6 +483,7 @@ def main():
     multi_page = args.multi_page
     img_fname = args.output_filename
     preproc = args.preprocess
+    layout = args.layout
     
     dprint(0, 'C src files:\n\t' +str(c_fnames) +", (extension '.c' omitted)\n"
            +'img fname:\n\t' +str(img_fname) +'.' +img_format +'\n'
@@ -507,8 +501,9 @@ def main():
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
     
-    dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page)
-    dot2svg(dot_paths, img_format)
+    dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
+                                 multi_page, layout)
+    dot2img(dot_paths, img_format, layout)
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,16 @@
-pycflow2dot
-===========
+# pycflow2dot
 
-Description
------------
+## Summary
+Draw call graphs for C source codes using `dot` and `cflow`.
+Typeset PDF with a page per source file and clickable cross-file function references.
+
+`pycflow2dot -i hello_simple.c -f png` produces:
+
+<img src="http://www.cds.caltech.edu/~ifilippi/temp/releases/python/pycflow2dot/hello_simple.png" width=500>
+
+from [`hello_simple.c`](https://github.com/johnyf/pycflow2dot/blob/master/examples/simple/hello_simple.c).
+
+## Description
 Draw the call graph of C source code using [cflow](http://en.wikipedia.org/wiki/GNU_cflow) and [dot](http://www.graphviz.org/).
 Output to LaTeX, .dot, .PDF, .SVG, .PNG
 and from dot to all formats supported from it.
