@@ -436,7 +436,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     parser.add_argument('-i', '--input-filenames', nargs='+',
-                        help='Filename(s) of C source code files to be parsed.')
+                        help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
                         help='name of dot, svg, pdf etc file produced')
     parser.add_argument('-f', '--output-format', default='svg',
@@ -457,12 +457,30 @@ def parse_args():
         choices=['dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp'],
         help='graphviz layout algorithm.'
     )
+    parser.add_argument(
+        '-x', '--exclude', default='',
+        help='file listing functions to ignore'
+    )
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
     args = parser.parse_args()
     
     return args
+
+def rm_excluded_funcs(list_fname, graphs):
+    # nothing ignored ?
+    if not list_fname:
+        return
+    
+    # load list of ignored functions
+    rm_nodes = [line.strip() for line in open(list_fname).readlines() ]
+    
+    # delete them
+    for graph in graphs:
+        for node in rm_nodes:
+            if node in graph:
+                graph.remove_node(node)
 
 def main():
     """Run cflow, parse output, produce dot and compile it into pdf | svg."""
@@ -484,6 +502,7 @@ def main():
     img_fname = args.output_filename
     preproc = args.preprocess
     layout = args.layout
+    exclude_list_fname = args.exclude
     
     dprint(0, 'C src files:\n\t' +str(c_fnames) +", (extension '.c' omitted)\n"
            +'img fname:\n\t' +str(img_fname) +'.' +img_format +'\n'
@@ -501,6 +520,7 @@ def main():
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
     
+    rm_excluded_funcs(exclude_list_fname, graphs)
     dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
                                  multi_page, layout)
     dot2img(dot_paths, img_format, layout)
