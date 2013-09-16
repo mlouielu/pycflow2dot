@@ -2,6 +2,12 @@
 
 # binaries
 *.DS_Store
+*.pdf
+*.svg
+*.jpg
+*.png
+*.dot
+*.out
 
 # C extensions
 *.so
