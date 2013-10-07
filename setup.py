@@ -28,6 +28,6 @@ setup(
         ]
     },
     keywords = ['c', 'call graph', 'control flow', 'dot',
-                'latex'],
+                'latex', 'cflow'],
     classifiers = [],
 )
