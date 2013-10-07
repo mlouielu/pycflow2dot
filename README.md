@@ -6,7 +6,7 @@ Typeset PDF with a page per source file and clickable cross-file function refere
 
 `pycflow2dot -i hello_simple.c -f png` produces:
 
-<img src="http://www.cds.caltech.edu/~ifilippi/temp/releases/python/pycflow2dot/hello_simple.png" width=500>
+![](http://www.cds.caltech.edu/~ifilippi/temp/releases/python/pycflow2dot/hello_simple.png)
 
 from [`hello_simple.c`](https://github.com/johnyf/pycflow2dot/blob/master/examples/simple/hello_simple.c).
 
@@ -35,6 +35,5 @@ available, so that the results can be included in a larger document, e.g., a rep
 PyCflow2dot is a Python port of the Perl script cflow2dot.
 Tested with Python 3.2 (NetworkX not yet available in 3.3.).
 
-License
--------
+## License
 PyCflow2dot is licensed under the GNU GPL v3.
