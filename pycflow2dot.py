@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright 2010 developer (unknown): https://code.google.com/p/cflow2dot/
+Copyright 2013-2014 Ioannis Filippidis
+Copyright 2010 unknown developer: https://code.google.com/p/cflow2dot/
 Copyright 2013 Dabaichi Valbendan
-Copyright 2013 Ioannis Filippidis
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
