@@ -5,8 +5,11 @@ from setuptools import setup
 
 if os.path.exists('README.txt'):
     long_description = open('README.txt').read()
-else:
+elif os.path.exists('README.md'):
     long_description=open('README.md').read()
+else:
+    print('Could not find readme from which to extract long_description.')
+    long_description = ''
 
 setup(
     name='pycflow2dot',
