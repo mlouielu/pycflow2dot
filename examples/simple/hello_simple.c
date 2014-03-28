@@ -1,8 +1,8 @@
 /*
  * simple demo for pycflow2dot, use with:
- *    pycflow2dot -i hello_simple.c -f png
+ *    cflow2dot -i hello_simple.c -f png
  * for help:
- *    pycflow2dot -h
+ *    cflow2dot -h
  */
 
 #include <stdio.h>

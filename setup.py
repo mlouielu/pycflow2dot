@@ -23,7 +23,7 @@ setup(
     install_requires=['networkx'],
     entry_points={
         'console_scripts': [
-            'pycflow2dot = pycflow2dot:main',
+            'cflow2dot = pycflow2dot:main',
         ]
     },
     keywords = ['c', 'call graph', 'control flow', 'dot',

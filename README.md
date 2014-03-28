@@ -4,7 +4,7 @@
 Draw call graphs for C source codes using `dot` and `cflow`.
 Typeset PDF with a page per source file and clickable cross-file function references.
 
-`pycflow2dot -i hello_simple.c -f png` produces:
+`cflow2dot -i hello_simple.c -f png` produces:
 
 ![](http://www.cds.caltech.edu/~ifilippi/temp/releases/python/pycflow2dot/hello_simple.png)
 
