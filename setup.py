@@ -13,7 +13,7 @@ else:
 
 setup(
     name='pycflow2dot',
-    version='0.2',
+    version='0.2.1',
     py_modules=['pycflow2dot'],
     license='GPLv3',
     description='Create C call graphs from multiple source files ' +
