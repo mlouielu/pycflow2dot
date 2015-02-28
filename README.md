@@ -6,7 +6,7 @@ Typeset PDF with a page per source file and clickable cross-file function refere
 
 `cflow2dot -i hello_simple.c -f png` produces:
 
-![](http://www.cds.caltech.edu/~ifilippi/temp/releases/python/pycflow2dot/hello_simple.png)
+![](https://raw.githubusercontent.com/johnyf/binaries/master/pycflow2dot/hello_simple.png)
 
 from [`hello_simple.c`](https://github.com/johnyf/pycflow2dot/blob/master/examples/simple/hello_simple.c).
 
