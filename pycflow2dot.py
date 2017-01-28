@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Plot `cflow` output as graphs."""
 # Copyright 2013-2017 Ioannis Filippidis
 # Copyright 2010 unknown developer: https://code.google.com/p/cflow2dot/
 # Copyright 2013 Dabaichi Valbendan

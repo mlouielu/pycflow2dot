@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+"""Installation script."""
 import os
 from setuptools import setup
 
