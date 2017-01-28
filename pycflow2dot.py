@@ -22,7 +22,7 @@ import argparse
 import subprocess
 import locale
 import re
-import networkx as nx # make this an optional dependency
+import networkx as nx
 try:
     import pydot
 except:
@@ -332,7 +332,7 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname,
         dot_path = write_dot_file(dot_str, img_fname)
     else:
         # dump using networkx and pydot
-        pydot_graph = nx.to_pydot(graph)
+        pydot_graph = nx.drawing.nx_pydot.to_pydot(graph)
 
         pydot_graph.set_splines('true')
         if layout == 'twopi':
