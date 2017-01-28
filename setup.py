@@ -25,11 +25,18 @@ setup(
         'networkx',
         'pydot >= 1.2.3'],
     entry_points={
-        'console_scripts': [
-            'cflow2dot = pycflow2dot:main',
-        ]
-    },
+        'console_scripts': ['cflow2dot = pycflow2dot:main']},
+    classifiers = [
+        'Development Status :: 2 - Pre-Alpha',
+        'Intended Audience :: Developers',
+        ('License :: OSI Approved :: '
+         'GNU General Public License v3 or later (GPLv3+)'),
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Topic :: Software Development']
     keywords = ['c', 'call graph', 'control flow', 'dot',
-                'latex', 'cflow'],
-    classifiers = [],
-)
+                'latex', 'cflow'])
+
+
