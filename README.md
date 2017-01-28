@@ -46,13 +46,25 @@ a report.
 PyCflow2dot is a Python port of the Perl script cflow2dot.
 Tested with Python 3.2 (NetworkX not yet available in 3.3.).
 
-## Dependencies
-- Python 2.7.\* or 3.\*
-- [GNU cflow](http://en.wikipedia.org/wiki/GNU_cflow) (e.g. `port install cflow` with [MacPorts](http://www.macports.org/))
-- [dot](http://www.graphviz.org/) (`port install graphviz`)
-- [networkx](http://networkx.github.io/) (`port install py-networkx` with MacPorts)
-- [pydot](https://pypi.python.org/pypi/pydot) (optional, `port install py-pydot`)
-- [cpp](http://en.wikipedia.org/wiki/C_preprocessor) (optional)
+
+## Installation
+
+Use [`pip`](https://en.wikipedia.org/wiki/Pip_%28package_manager%29) with
+Python 3 or 2:
+
+`pip install pycflow2dot`
+
+You also need to install the following non-Python dependencies:
+
+- [GNU cflow](http://en.wikipedia.org/wiki/GNU_cflow):
+  - `apt-get install cflow` on Debian GNU/Linux
+  - `port install cflow` with [MacPorts](http://www.macports.org/)
+- [`dot`](http://www.graphviz.org/):
+  - `apt-get install graphviz`
+  - `port install graphviz`
+
+Optionally, [`cpp`](http://en.wikipedia.org/wiki/C_preprocessor) too.
+
 
 ## License
 
