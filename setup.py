@@ -14,7 +14,7 @@ else:
 def run_setup():
     setup(
         name='pycflow2dot',
-        version='0.2.1',
+        version='0.2.2',
         py_modules=['pycflow2dot'],
         license='GPLv3',
         description=(
