@@ -448,14 +448,6 @@ def write_latex():
     latex_str = latex_preamble_str()
 
 
-def usage():
-    doc = 'cflow2dot.py file1 file2 ..... --output[-o] outputfilename\n'
-    doc += 'output file format is svg\n'
-    doc += '--version (-v) show version\n'
-    doc += '--help (-h) show this document.'
-    print(doc)
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
 
