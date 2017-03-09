@@ -503,9 +503,7 @@ def rm_excluded_funcs(list_fname, graphs):
 def main():
     """Run cflow, parse output, produce dot and compile it into pdf | svg."""
 
-    copyright_msg = """
-    PyCflow2dot v0.1 - licensed under GNU GPL v3
-    """
+    copyright_msg = 'cflow2dot'
     print(copyright_msg)
 
     # input
