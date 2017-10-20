@@ -64,7 +64,8 @@ def get_name(line):
     return name
 
 
-def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
+def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False,
+               do_reverse=False):
     cflow_cmd = [cflow]
 
     if numbered_nesting:
@@ -75,6 +76,9 @@ def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
         cflow_cmd += ['--cpp']
     elif preprocess != False:
         cflow_cmd += ['--cpp=' + preprocess]
+
+    if do_reverse:
+        cflow_cmd += ['--reverse']
 
     cflow_cmd += [c_fname]
 
@@ -468,6 +472,9 @@ def parse_args():
     parser.add_argument('-p', '--preprocess', default=False, nargs='?',
                         help='pass --cpp option to cflow, '
                         + 'invoking C preprocessor, optionally with args.')
+    parser.add_argument('-r', '--reverse', default=False, action='store_true',
+                        help='pass --reverse option to cflow, '
+                        + 'chart callee-caller dependencies')
     parser.add_argument(
         '-g', '--layout', default='dot',
         choices=['dot', 'neato', 'twopi', 'circo', 'fdp', 'sfdp'],
@@ -517,6 +524,7 @@ def main():
     multi_page = args.multi_page
     img_fname = args.output_filename
     preproc = args.preprocess
+    do_rev = args.reverse
     layout = args.layout
     exclude_list_fname = args.exclude
 
@@ -528,7 +536,7 @@ def main():
     cflow_strs = []
     for c_fname in c_fnames:
         cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
-                             preprocess=preproc)
+                             preprocess=preproc, do_reverse=do_rev)
         cflow_strs += [cur_str]
 
     graphs = []
