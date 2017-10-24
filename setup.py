@@ -25,7 +25,7 @@ def run_setup():
         author_email='jfilippidis@gmail.com',
         url='https://github.com/johnyf/pycflow2dot',
         install_requires=[
-            'networkx == 1.10',
+            'networkx >= 2.0',
             'pydot >= 1.2.3'],
         entry_points={
             'console_scripts': ['cflow2dot = pycflow2dot:main']},
