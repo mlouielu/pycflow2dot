@@ -318,7 +318,7 @@ def dump_dot_wo_pydot(graph, other_graphs, c_fname, for_latex, multi_page):
         dot_str += dot_format_node(node, nest_level, src_line, defined_somewhere,
                                    for_latex, multi_page)
 
-    for from_node, to_node in graph.edges_iter():
+    for from_node, to_node in graph.edges():
         # call order affects edge color, so use only black
         color = '#000000'
         dot_str += dot_format_edge(from_node, to_node, color)
