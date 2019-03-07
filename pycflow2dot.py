@@ -451,6 +451,8 @@ def write_latex():
 def parse_args():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-I', '--input-cflow', action='store_true',
+                        help='input is cflow output', default=False)
     parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
@@ -527,8 +529,11 @@ def main():
 
     cflow_strs = []
     for c_fname in c_fnames:
-        cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
-                             preprocess=preproc)
+        if not args.input_cflow:
+            cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
+                                 preprocess=preproc)
+        else:
+            cur_str = open(c_fname).read()
         cflow_strs += [cur_str]
 
     graphs = []
@@ -540,6 +545,7 @@ def main():
     dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
                                  multi_page, layout)
     dot2img(dot_paths, img_format, layout)
+
 
 if __name__ == "__main__":
     main()
