@@ -188,7 +188,13 @@ def cflow2nx(cflow_str, c_fname):
 
         # not already seen ?
         if cur_node not in g:
-            g.add_node(cur_node, nest_level=nest_level, src_line=src_line_no)
+            # Let node draw with source file and its source line number
+            if src_file and src_line_no:
+                label = (f'<{cur_node}<BR /><FONT POINT-SIZE="10">{src_file}:'
+                         f'{src_line_no}</FONT>>')
+                g.add_node(cur_node, nest_level=nest_level, label=label)
+            else:
+                g.add_node(cur_node, nest_level=nest_level)
             dprint(0, 'New Node: ' + cur_node)
 
         # not root node ?
