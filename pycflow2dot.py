@@ -163,6 +163,13 @@ def cflow2nx(cflow_str, c_fname):
         else:
             src_line_no = -1
 
+        # get source file
+        src_file = re.findall(r'(?<=at\s).+?(?=:)', line)
+        if not src_file:
+            src_file = ""
+        else:
+            src_file = src_file[-1]
+
         # trim
         s = re.sub(r'\(.*$', '', line)
         s = re.sub(r'^\{\s*', '', s)
