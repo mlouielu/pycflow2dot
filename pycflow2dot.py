@@ -81,7 +81,9 @@ def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False,
     for p in c_parameters.split(' '):
         cflow_cmd.append(p)
 
-    cflow_cmd += [c_fname]
+    # XXX: This change the original behavior, since I need multiple file into one cflow file
+    #      But in original behavior, it will process each file (thus create multiple cflow file)
+    cflow_cmd.extend(c_fname.split())
 
     dprint(2, 'cflow command:\n\t' + str(cflow_cmd))
 
@@ -471,7 +473,7 @@ def parse_args():
 
     parser.add_argument('-I', '--input-cflow-parameters', help='add cflow parameters', default='')
     parser.add_argument('-s', '--source')
-    parser.add_argument('-t', '--target')
+    parser.add_argument('-t', '--targets', nargs='+', default=[])
     parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
@@ -535,7 +537,7 @@ def main():
     c_fnames = args.input_filenames
     c_parameters = args.input_cflow_parameters
     source = args.source
-    target = args.target
+    targets = args.targets
     img_format = args.output_format
     for_latex = args.latex_svg
     multi_page = args.multi_page
@@ -550,22 +552,51 @@ def main():
            + 'Multi-page PDF:\n\t' + str(multi_page))
 
     cflow_strs = []
+
+    # HACK: I only need single cflow output, so I merge them into one
+    c_fnames = [' '.join(c_fnames)]
     for c_fname in c_fnames:
         cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
                              preprocess=preproc, c_parameters=c_parameters)
         cflow_strs += [cur_str]
 
     graphs = []
+
+    # XXX: If we have more than these color's path, we will dead in the wild
+    colors = ['red', 'green', 'orange', 'blue', 'goldenrod3', 'purple', 'cyan',
+              'deeppink1', 'darkseagreen1']
     for cflow_out, c_fname in zip(cflow_strs, c_fnames):
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
-        if source and target and source in cur_graph.node and target in cur_graph.node:
-            paths = list(nx.all_simple_paths(cur_graph, source=source, target=target))
-            if paths:
-                path = paths[0]
-                for n in path:
-                    cur_graph.node[n]['color'] = 'red'
-                    cur_graph.node[n]['penwidth'] = 3
+
+        # Match multiple targets (e.g. src->dst1, src->dst2)
+        for target in targets:
+            if source and target and source in cur_graph.node and target in cur_graph.node:
+                paths = list(nx.all_simple_paths(cur_graph, source=source, target=target))
+                for index, path in enumerate(paths):
+                    for a, b in zip(path, path[1:]):
+                        if 'color' not in cur_graph.edge[a][b]:
+                            cur_graph.node[a]['color'] = colors[index]
+                            cur_graph.node[a]['penwidth'] = 3
+                            cur_graph.node[b]['color'] = colors[index]
+                            cur_graph.node[b]['penwidth'] = 3
+                            cur_graph.edge[a][b]['color'] = colors[index]
+                            cur_graph.edge[a][b]['penwidth'] = 6
+
+                # Remove unrelated node & endge
+                # TODO: Add option to turn off this
+                for n in cur_graph.node:
+                    if 'color' in cur_graph.node[n]:
+                        cur_graph.node[n]['keep'] = True
+
+                        # We can remain one level of the relative function
+                        # TODO: Add option to turn this off
+                        for p in cur_graph.edge[n]:
+                            cur_graph.node[p]['keep'] = True
+            # NOTE: This will actually remove the node that didn't mark with "keep"
+            for n in dict(cur_graph.node):
+                if 'keep' not in cur_graph.node[n]:
+                    cur_graph.remove_node(n)
 
     rm_excluded_funcs(exclude_list_fname, graphs)
     dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
