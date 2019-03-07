@@ -64,7 +64,8 @@ def get_name(line):
     return name
 
 
-def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
+def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False,
+               c_parameters=''):
     cflow_cmd = [cflow]
 
     if numbered_nesting:
@@ -75,6 +76,10 @@ def call_cflow(c_fname, cflow, numbered_nesting=True, preprocess=False):
         cflow_cmd += ['--cpp']
     elif preprocess != False:
         cflow_cmd += ['--cpp=' + preprocess]
+
+    # Add cflow parameters on it
+    for p in c_parameters.split(' '):
+        cflow_cmd.append(p)
 
     cflow_cmd += [c_fname]
 
@@ -464,8 +469,9 @@ def write_latex():
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-I', '--input-cflow', action='store_true',
-                        help='input is cflow output', default=False)
+    parser.add_argument('-I', '--input-cflow-parameters', help='add cflow parameters', default='')
+    parser.add_argument('-s', '--source')
+    parser.add_argument('-t', '--target')
     parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
@@ -527,6 +533,9 @@ def main():
     args = parse_args()
 
     c_fnames = args.input_filenames
+    c_parameters = args.input_cflow_parameters
+    source = args.source
+    target = args.target
     img_format = args.output_format
     for_latex = args.latex_svg
     multi_page = args.multi_page
@@ -542,17 +551,21 @@ def main():
 
     cflow_strs = []
     for c_fname in c_fnames:
-        if not args.input_cflow:
-            cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
-                                 preprocess=preproc)
-        else:
-            cur_str = open(c_fname).read()
+        cur_str = call_cflow(c_fname, cflow, numbered_nesting=True,
+                             preprocess=preproc, c_parameters=c_parameters)
         cflow_strs += [cur_str]
 
     graphs = []
     for cflow_out, c_fname in zip(cflow_strs, c_fnames):
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
+        if source and target and source in cur_graph.node and target in cur_graph.node:
+            paths = list(nx.all_simple_paths(cur_graph, source=source, target=target))
+            if paths:
+                path = paths[0]
+                for n in path:
+                    cur_graph.node[n]['color'] = 'red'
+                    cur_graph.node[n]['penwidth'] = 3
 
     rm_excluded_funcs(exclude_list_fname, graphs)
     dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
