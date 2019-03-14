@@ -362,7 +362,7 @@ def write_dot_file(dot_str, dot_fname):
 
 
 def write_graph2dot(graph, other_graphs, c_fname, img_fname,
-                    for_latex, multi_page, layout):
+                    for_latex, multi_page, layout, rankdir='LR'):
     if pydot is None:
         print('Pydot not found. Exporting using pycflow2dot.write_dot_file().')
         dot_str = dump_dot_wo_pydot(graph, other_graphs, c_fname,
@@ -377,7 +377,7 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname,
             pydot_graph.set_root('main')
         else:
             pydot_graph.set_overlap(False)
-            pydot_graph.set_rankdir('LR')
+            pydot_graph.set_rankdir(rankdir)
 
 
         dot_path = img_fname + '.dot'
@@ -386,7 +386,8 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname,
     return dot_path
 
 
-def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page, layout):
+def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page, layout,
+                     rankdir='LR'):
     dot_paths = []
     counter = 0
     for graph, c_fname in zip(graphs, c_fnames):
@@ -395,7 +396,7 @@ def write_graphs2dot(graphs, c_fnames, img_fname, for_latex, multi_page, layout)
 
         cur_img_fname = img_fname + str(counter)
         dot_paths += [write_graph2dot(graph, other_graphs, c_fname, cur_img_fname,
-                                      for_latex, multi_page, layout)]
+                                      for_latex, multi_page, layout, rankdir)]
         counter += 1
 
     return dot_paths
@@ -477,6 +478,7 @@ def parse_args():
     parser.add_argument('-R', '--remove-unrelated', action='count', default=0,
                         help=('when using source / target, remove unrelated node.'
                               'support multiple R to remain layer of node'))
+    parser.add_argument('--rankdir', default='LR')
     parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
@@ -549,6 +551,7 @@ def main():
     layout = args.layout
     exclude_list_fname = args.exclude
     remove_unrelated = args.remove_unrelated
+    rankdir = args.rankdir
 
     dprint(0, 'C src files:\n\t' + str(c_fnames) + ", (extension '.c' omitted)\n"
            + 'img fname:\n\t' + str(img_fname) + '.' + img_format + '\n'
@@ -615,7 +618,7 @@ def main():
 
     rm_excluded_funcs(exclude_list_fname, graphs)
     dot_paths = write_graphs2dot(graphs, c_fnames, img_fname, for_latex,
-                                 multi_page, layout)
+                                 multi_page, layout, rankdir)
     dot2img(dot_paths, img_format, layout)
 
 
