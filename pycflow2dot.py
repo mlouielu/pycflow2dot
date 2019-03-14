@@ -371,7 +371,6 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname,
     else:
         # dump using networkx and pydot
         pydot_graph = nx.drawing.nx_pydot.to_pydot(graph)
-
         pydot_graph.set_splines('true')
         if layout == 'twopi':
             pydot_graph.set_ranksep(5)
@@ -379,6 +378,7 @@ def write_graph2dot(graph, other_graphs, c_fname, img_fname,
         else:
             pydot_graph.set_overlap(False)
             pydot_graph.set_rankdir('LR')
+
 
         dot_path = img_fname + '.dot'
         pydot_graph.write(dot_path, format='dot')
@@ -564,7 +564,8 @@ def main():
 
     # XXX: If we have more than these color's path, we will dead in the wild
     colors = ['red', 'green', 'orange', 'blue', 'goldenrod3', 'purple', 'cyan',
-              'deeppink1', 'darkseagreen1']
+              'deeppink1', 'darkseagreen1', 'darkgreen', 'crimson',
+              'firebrick3', 'dimgray', 'coral1']
     for cflow_out, c_fname in zip(cflow_strs, c_fnames):
         cur_graph = cflow2nx(cflow_out, c_fname)
         graphs += [cur_graph]
@@ -572,15 +573,23 @@ def main():
         # Match multiple targets (e.g. src->dst1, src->dst2)
         for target in targets:
             if source and target and source in cur_graph.node and target in cur_graph.node:
+                # Color the source and target
+                cur_graph.node[source]['shape'] = 'rectangle'
+                cur_graph.node[source]['style'] = 'filled'
+                cur_graph.node[source]['fillcolor'] = 'gold'
+                cur_graph.node[target]['shape'] = 'rectangle'
+                cur_graph.node[target]['style'] = 'filled'
+                cur_graph.node[target]['fillcolor'] = 'brown1'
+
                 paths = list(nx.all_simple_paths(cur_graph, source=source, target=target))
                 for index, path in enumerate(paths):
                     for a, b in zip(path, path[1:]):
                         if 'color' not in cur_graph.edge[a][b]:
-                            cur_graph.node[a]['color'] = colors[index]
+                            cur_graph.node[a]['color'] = colors[index % 13]
                             cur_graph.node[a]['penwidth'] = 3
-                            cur_graph.node[b]['color'] = colors[index]
+                            cur_graph.node[b]['color'] = colors[index % 13]
                             cur_graph.node[b]['penwidth'] = 3
-                            cur_graph.edge[a][b]['color'] = colors[index]
+                            cur_graph.edge[a][b]['color'] = colors[index % 13]
                             cur_graph.edge[a][b]['penwidth'] = 6
 
                 # Remove unrelated node & endge
@@ -593,6 +602,7 @@ def main():
                         # TODO: Add option to turn this off
                         for p in cur_graph.edge[n]:
                             cur_graph.node[p]['keep'] = True
+
             # NOTE: This will actually remove the node that didn't mark with "keep"
             for n in dict(cur_graph.node):
                 if 'keep' not in cur_graph.node[n]:
