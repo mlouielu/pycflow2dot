@@ -474,6 +474,9 @@ def parse_args():
     parser.add_argument('-I', '--input-cflow-parameters', help='add cflow parameters', default='')
     parser.add_argument('-s', '--source')
     parser.add_argument('-t', '--targets', nargs='+', default=[])
+    parser.add_argument('-R', '--remove-unrelated', action='count', default=0,
+                        help=('when using source / target, remove unrelated node.'
+                              'support multiple R to remain layer of node'))
     parser.add_argument('-i', '--input-filenames', nargs='+',
                         help='filename(s) of C source code files to be parsed.')
     parser.add_argument('-o', '--output-filename', default='cflow',
@@ -545,6 +548,7 @@ def main():
     preproc = args.preprocess
     layout = args.layout
     exclude_list_fname = args.exclude
+    remove_unrelated = args.remove_unrelated
 
     dprint(0, 'C src files:\n\t' + str(c_fnames) + ", (extension '.c' omitted)\n"
            + 'img fname:\n\t' + str(img_fname) + '.' + img_format + '\n'
@@ -593,17 +597,18 @@ def main():
                             cur_graph.edge[a][b]['penwidth'] = 6
 
                 # Remove unrelated node & endge
-                # TODO: Add option to turn off this
-                for n in cur_graph.node:
-                    if 'color' in cur_graph.node[n]:
-                        cur_graph.node[n]['keep'] = True
+                if remove_unrelated:
+                    for n in cur_graph.node:
+                        if 'color' in cur_graph.node[n]:
+                            cur_graph.node[n]['keep'] = True
 
-                        # We can remain one level of the relative function
-                        # TODO: Add option to turn this off
-                        for p in cur_graph.edge[n]:
-                            cur_graph.node[p]['keep'] = True
+                            # We can remain one level of the relative function
+                            if remove_unrelated > 1:
+                                for p in cur_graph.edge[n]:
+                                    cur_graph.node[p]['keep'] = True
 
-            # NOTE: This will actually remove the node that didn't mark with "keep"
+        # NOTE: This will actually remove the node that didn't mark with "keep"
+        if targets and remove_unrelated:
             for n in dict(cur_graph.node):
                 if 'keep' not in cur_graph.node[n]:
                     cur_graph.remove_node(n)
